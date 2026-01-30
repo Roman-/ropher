@@ -1,0 +1,130 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useApp } from '../contexts/AppContext';
+import { POMODORO_INTERVALS, MS_IN_MINUTE, SECS_IN_MINUTE } from '../utils/constants';
+import { formatTime } from '../utils/dateUtils';
+
+export function PomodoroView() {
+  const {
+    currentTask,
+    currentGoal,
+    isPlaying,
+    intervalIndex,
+    getMsLeft,
+    getSessionTime,
+    isOverdue,
+    togglePlayPause,
+    addTime,
+    changeInterval,
+    finishAndReturn,
+    playDing,
+  } = useApp();
+
+  const [, forceUpdate] = useState(0);
+
+  // Update display every 100ms
+  useEffect(() => {
+    const interval = setInterval(() => {
+      forceUpdate((n) => n + 1);
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Play ding when timer expires - using ref to avoid setState in effect
+  const prevOverdueRef = useRef(false);
+  useEffect(() => {
+    const overdue = isOverdue();
+    if (overdue && !prevOverdueRef.current) {
+      playDing();
+    }
+    prevOverdueRef.current = overdue;
+  }, [isOverdue, playDing]);
+
+  const msLeft = getMsLeft();
+  const sessionSeconds = getSessionTime() / 1000;
+  const overdue = isOverdue();
+
+  // Determine background color
+  const getBgColor = useCallback(() => {
+    if (overdue) return '#ffffff';
+    return `#${currentTask?.color || '666'}22`;
+  }, [overdue, currentTask]);
+
+  const getTextColor = useCallback(() => {
+    return overdue ? '#000000' : '#ffffff';
+  }, [overdue]);
+
+  // Format time display
+  const timeDisplay = formatTime(msLeft / 1000);
+
+  // Session time warning (> 55 minutes)
+  const sessionWarning = sessionSeconds >= 55 * SECS_IN_MINUTE;
+
+  return (
+    <div
+      className="pomodoro-view"
+      style={{ backgroundColor: getBgColor(), color: getTextColor() }}
+    >
+      {/* Top row - interval buttons */}
+      <div className="pmd-intervals">
+        {POMODORO_INTERVALS.map((interval, idx) => (
+          <button
+            key={interval}
+            className={`pmd-interval-button ${idx === intervalIndex ? 'active' : ''}`}
+            onClick={() => changeInterval(idx)}
+          >
+            {interval}
+          </button>
+        ))}
+      </div>
+
+      {/* Center - goal and time */}
+      <div className="pmd-center" onClick={finishAndReturn}>
+        {!overdue ? (
+          <>
+            <span className="pmd-goal">{currentGoal}</span>
+            <span className="pmd-time">
+              {timeDisplay}
+              {!isPlaying && ' ⏸'}
+            </span>
+          </>
+        ) : (
+          <span className="pmd-time-up">
+            time is up
+            <br />
+            click to finish
+          </span>
+        )}
+      </div>
+
+      {/* Bottom row - controls */}
+      <div className="pmd-bottom">
+        <div className={`pmd-session-time ${sessionWarning ? 'warning' : ''}`}>
+          {formatTime(sessionSeconds, true)}
+        </div>
+
+        <div className="pmd-controls">
+          <button
+            className="pmd-control-button"
+            onClick={togglePlayPause}
+          >
+            {isPlaying ? '⏸' : '▶'}
+          </button>
+          <button
+            className="pmd-control-button"
+            onClick={() => addTime(1 * MS_IN_MINUTE)}
+          >
+            +1
+          </button>
+          <button
+            className="pmd-control-button"
+            onClick={() => addTime(5 * MS_IN_MINUTE)}
+          >
+            +5
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default PomodoroView;
