@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { POMODORO_INTERVALS, MS_IN_MINUTE, SECS_IN_MINUTE } from '../utils/constants';
 import { formatTime } from '../utils/dateUtils';
+import { SettingsMenu } from './SettingsMenu';
 
 export function PomodoroView() {
   const {
@@ -64,17 +65,20 @@ export function PomodoroView() {
       className="pomodoro-view"
       style={{ backgroundColor: getBgColor(), color: getTextColor() }}
     >
-      {/* Top row - interval buttons */}
-      <div className="pmd-intervals">
-        {POMODORO_INTERVALS.map((interval, idx) => (
-          <button
-            key={interval}
-            className={`pmd-interval-button ${idx === intervalIndex ? 'active' : ''}`}
-            onClick={() => changeInterval(idx)}
-          >
-            {interval}
-          </button>
-        ))}
+      {/* Top row - interval buttons and settings */}
+      <div className="pmd-top">
+        <div className="pmd-intervals">
+          {POMODORO_INTERVALS.map((interval, idx) => (
+            <button
+              key={interval}
+              className={`pmd-interval-button ${idx === intervalIndex ? 'active' : ''}`}
+              onClick={() => changeInterval(idx)}
+            >
+              {interval}
+            </button>
+          ))}
+        </div>
+        <SettingsMenu />
       </div>
 
       {/* Center - goal and time */}

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useEntries } from '../hooks/useEntries';
 import { usePomodoro } from '../hooks/usePomodoro';
@@ -28,6 +28,34 @@ export function AppProvider({ children }) {
     clockSizeIndex: 1, // default to large (index 1)
     lastGoal: '',
   });
+
+  // Fullscreen state (synced with document.fullscreenElement)
+  const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
+
+  // Sync fullscreen state when user presses Escape or uses browser controls
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Toggle fullscreen manually
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else if (document.fullscreenEnabled) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }, []);
+
+  // Set clock size directly by index
+  const setClockSizeIndex = useCallback((index) => {
+    if (index >= 0 && index < CLOCK_SIZES.length) {
+      setSettings((prev) => ({ ...prev, clockSizeIndex: index }));
+    }
+  }, [setSettings]);
 
   // Entries management
   const entriesApi = useEntries();
@@ -99,6 +127,11 @@ export function AppProvider({ children }) {
     setSettings,
     cycleClockSize,
     getClockSize,
+    setClockSizeIndex,
+
+    // Fullscreen
+    isFullscreen,
+    toggleFullscreen,
 
     // Entries
     ...entriesApi,

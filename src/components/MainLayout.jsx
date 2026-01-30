@@ -3,14 +3,16 @@ import { TaskBar } from './TaskBar';
 import { Timeline } from './Timeline';
 import { TimeSummary } from './TimeSummary';
 import { QuoteDisplay } from './QuoteDisplay';
+import { SettingsMenu } from './SettingsMenu';
 
 export function MainLayout() {
   return (
     <div className="main-layout">
       <div className="main-content">
-        {/* Left column - empty for now, can add weekday/jotdowns later */}
+        {/* Left column - timeline and summary */}
         <div className="left-column">
-          {/* Placeholder */}
+          <Timeline />
+          <TimeSummary />
         </div>
 
         {/* Center column - task buttons and clock */}
@@ -19,10 +21,9 @@ export function MainLayout() {
           <Clock />
         </div>
 
-        {/* Right column - timeline and summary */}
+        {/* Right column - settings */}
         <div className="right-column">
-          <Timeline />
-          <TimeSummary />
+          <SettingsMenu />
         </div>
       </div>
 

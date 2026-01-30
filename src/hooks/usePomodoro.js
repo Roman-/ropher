@@ -111,11 +111,6 @@ export function usePomodoro(addEntry, saveSettings) {
     if (goal && saveSettings) {
       saveSettings((prev) => ({ ...prev, lastGoal: goal }));
     }
-
-    // Request fullscreen
-    if (document.fullscreenEnabled && !document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    }
   }, [saveSettings]);
 
   // Toggle play/pause
@@ -193,11 +188,6 @@ export function usePomodoro(addEntry, saveSettings) {
 
     // Clear saved state
     clearPomodoroState();
-
-    // Exit fullscreen
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    }
   }, [isPlaying, currentTask, addEntry, clearPomodoroState]);
 
   // Check for unsaved pomodoro on mount
