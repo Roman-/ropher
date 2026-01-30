@@ -122,15 +122,16 @@ export function usePomodoro(addEntry, saveSettings) {
   const togglePlayPause = useCallback(() => {
     // Don't pause if overdue
     if (getMsLeft() <= 0) return;
+    const msPassed = getMsPassed(); // Capture first before any ref mutations
 
     if (isPlaying) {
       // Pausing - record the entry
       if (currentTask && startTimeRef.current) {
         addEntry(currentTask.id, startTimeRef.current, Date.now());
-        setTotalWorkMs((prev) => prev + getMsPassed());
+        setTotalWorkMs((prev) => prev + msPassed);
       }
       // Update msRemaining to reflect time spent
-      setMsRemaining((prev) => prev - getMsPassed());
+      setMsRemaining((prev) => prev - msPassed);
     }
 
     // Reset start time for next segment
@@ -154,14 +155,18 @@ export function usePomodoro(addEntry, saveSettings) {
   const changeInterval = useCallback((index) => {
     setIntervalIndex(index);
     const newMs = POMODORO_INTERVALS[index] * MS_IN_MINUTE;
-    if (isPlaying) {
-      // Add getMsPassed so getMsLeft() correctly subtracts it
-      setMsRemaining(newMs + getMsPassed());
-    } else {
-      // When paused, msRemaining IS the remaining time directly
-      setMsRemaining(newMs);
+    const msPassed = getMsPassed(); // Capture first before any ref mutations
+
+    if (isPlaying && currentTask && startTimeRef.current) {
+      // Record the work done in the current segment before changing
+      addEntry(currentTask.id, startTimeRef.current, Date.now());
+      setTotalWorkMs((prev) => prev + msPassed);
     }
-  }, [isPlaying, getMsPassed]);
+
+    // Start a fresh segment with the new interval
+    startTimeRef.current = Date.now();
+    setMsRemaining(newMs);
+  }, [isPlaying, currentTask, addEntry, getMsPassed]);
 
   // Finish the pomodoro
   const finishPomodoro = useCallback(() => {
