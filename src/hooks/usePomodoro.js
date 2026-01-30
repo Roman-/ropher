@@ -153,8 +153,15 @@ export function usePomodoro(addEntry, saveSettings) {
   // Change interval preset
   const changeInterval = useCallback((index) => {
     setIntervalIndex(index);
-    setMsRemaining(POMODORO_INTERVALS[index] * MS_IN_MINUTE + getMsPassed());
-  }, [getMsPassed]);
+    const newMs = POMODORO_INTERVALS[index] * MS_IN_MINUTE;
+    if (isPlaying) {
+      // Add getMsPassed so getMsLeft() correctly subtracts it
+      setMsRemaining(newMs + getMsPassed());
+    } else {
+      // When paused, msRemaining IS the remaining time directly
+      setMsRemaining(newMs);
+    }
+  }, [isPlaying, getMsPassed]);
 
   // Finish the pomodoro
   const finishPomodoro = useCallback(() => {
