@@ -25,6 +25,12 @@ export const SCOPE_LIMITS = {
   MAX: 5,
 };
 
+// Preset colors for scope color picker (hex without #)
+export const PRESET_COLORS = [
+  '4a90d9', '7cb342', 'e57373', 'ffb74d',
+  'ba68c8', '4dd0e1', 'fff176', 'a1887f',
+];
+
 // Default scopes - structure: { id: number, name: string, color: string (hex without #) }
 // Scopes represent different areas of focus (e.g., Work, Personal, Learning)
 // To make configurable: load from settings/localStorage, validate against SCOPE_LIMITS,

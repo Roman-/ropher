@@ -10,6 +10,7 @@ export function SettingsMenu() {
     toggleFullscreen,
     settings,
     setClockSizeIndex,
+    setView,
   } = useApp();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -74,6 +75,14 @@ export function SettingsMenu() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Manage Scopes link */}
+          <div
+            className="settings-link"
+            onClick={() => { setView('settings'); setIsOpen(false); }}
+          >
+            Manage Scopes →
           </div>
         </div>
       )}

@@ -1,8 +1,8 @@
-import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useEntries } from '../hooks/useEntries';
 import { usePomodoro } from '../hooks/usePomodoro';
-import { DEFAULT_SCOPES, STORAGE_KEYS, CLOCK_SIZES } from '../utils/constants';
+import { DEFAULT_SCOPES, STORAGE_KEYS, CLOCK_SIZES, SCOPE_LIMITS, PRESET_COLORS } from '../utils/constants';
 
 const AppContext = createContext(null);
 
@@ -22,12 +22,31 @@ const INITIAL_STATE = (() => {
   return { view: 'main', scopeId: null };
 })();
 
+// Validate scopes array - returns valid scopes or DEFAULT_SCOPES
+function validateScopes(scopes) {
+  if (!Array.isArray(scopes)) return DEFAULT_SCOPES;
+  if (scopes.length < SCOPE_LIMITS.MIN || scopes.length > SCOPE_LIMITS.MAX) return DEFAULT_SCOPES;
+
+  const validScopes = scopes.filter(s =>
+    s && typeof s.id === 'number' &&
+    typeof s.name === 'string' && s.name.trim() &&
+    typeof s.color === 'string' && /^[0-9a-fA-F]{6}$/.test(s.color)
+  );
+
+  if (validScopes.length < SCOPE_LIMITS.MIN) return DEFAULT_SCOPES;
+  return validScopes;
+}
+
 export function AppProvider({ children }) {
   // Settings (persisted)
   const [settings, setSettings] = useLocalStorage(STORAGE_KEYS.SETTINGS, {
     clockSizeIndex: 1, // default to large (index 1)
     lastGoal: '',
+    scopes: DEFAULT_SCOPES,
   });
+
+  // Derive validated scopes from settings
+  const scopes = useMemo(() => validateScopes(settings.scopes), [settings.scopes]);
 
   // Fullscreen state (synced with document.fullscreenElement)
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
@@ -57,8 +76,62 @@ export function AppProvider({ children }) {
     }
   }, [setSettings]);
 
+  // Scope CRUD functions
+  const updateScope = useCallback((id, updates) => {
+    setSettings((prev) => ({
+      ...prev,
+      scopes: (prev.scopes || DEFAULT_SCOPES).map(s =>
+        s.id === id ? { ...s, ...updates } : s
+      ),
+    }));
+  }, [setSettings]);
+
+  const addScope = useCallback(() => {
+    setSettings((prev) => {
+      const currentScopes = prev.scopes || DEFAULT_SCOPES;
+      if (currentScopes.length >= SCOPE_LIMITS.MAX) return prev;
+
+      const maxId = Math.max(...currentScopes.map(s => s.id), 0);
+      const usedColors = new Set(currentScopes.map(s => s.color));
+      const availableColor = PRESET_COLORS.find(c => !usedColors.has(c)) || PRESET_COLORS[0];
+
+      return {
+        ...prev,
+        scopes: [...currentScopes, { id: maxId + 1, name: 'New', color: availableColor }],
+      };
+    });
+  }, [setSettings]);
+
+  const removeScope = useCallback((id) => {
+    setSettings((prev) => {
+      const currentScopes = prev.scopes || DEFAULT_SCOPES;
+      if (currentScopes.length <= SCOPE_LIMITS.MIN) return prev;
+      return {
+        ...prev,
+        scopes: currentScopes.filter(s => s.id !== id),
+      };
+    });
+  }, [setSettings]);
+
+  const reorderScopes = useCallback((fromIndex, toIndex) => {
+    setSettings((prev) => {
+      const currentScopes = [...(prev.scopes || DEFAULT_SCOPES)];
+      if (fromIndex < 0 || fromIndex >= currentScopes.length) return prev;
+      if (toIndex < 0 || toIndex >= currentScopes.length) return prev;
+
+      const [moved] = currentScopes.splice(fromIndex, 1);
+      currentScopes.splice(toIndex, 0, moved);
+
+      return { ...prev, scopes: currentScopes };
+    });
+  }, [setSettings]);
+
+  const resetScopes = useCallback(() => {
+    setSettings((prev) => ({ ...prev, scopes: DEFAULT_SCOPES }));
+  }, [setSettings]);
+
   // Entries management - pass scopes for future configurability
-  const entriesApi = useEntries(DEFAULT_SCOPES);
+  const entriesApi = useEntries(scopes);
 
   // Pomodoro management
   const pomodoroApi = usePomodoro(entriesApi.addEntry, setSettings);
@@ -67,7 +140,7 @@ export function AppProvider({ children }) {
   const [view, setView] = useState(INITIAL_STATE.view);
   const [selectedScope, setSelectedScope] = useState(() => {
     if (INITIAL_STATE.scopeId) {
-      return DEFAULT_SCOPES.find(s => s.id === INITIAL_STATE.scopeId) || null;
+      return scopes.find(s => s.id === INITIAL_STATE.scopeId) || null;
     }
     return null;
   });
@@ -113,14 +186,19 @@ export function AppProvider({ children }) {
   const recoveryDone = useRef(false);
   useEffect(() => {
     if (!recoveryDone.current && INITIAL_STATE.view === 'pomodoro') {
-      pomodoroApi.recoverPomodoro(DEFAULT_SCOPES);
+      pomodoroApi.recoverPomodoro(scopes);
       recoveryDone.current = true;
     }
-  }, [pomodoroApi]);
+  }, [pomodoroApi, scopes]);
 
   const value = {
-    // Static data
-    scopes: DEFAULT_SCOPES,
+    // Scopes (now configurable)
+    scopes,
+    updateScope,
+    addScope,
+    removeScope,
+    reorderScopes,
+    resetScopes,
 
     // Settings
     settings,

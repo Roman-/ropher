@@ -59,7 +59,7 @@ export function useEntries(scopes) {
           ms: new Date(entry.end) - new Date(entry.start),
         };
       });
-  }, [entries]);
+  }, [entries, scopes]);
 
   // Get time spent per scope today
   const getTimeSpentByScope = useCallback(() => {
@@ -79,7 +79,7 @@ export function useEntries(scopes) {
     });
 
     return timeByScope;
-  }, [getTodaysEntries]);
+  }, [getTodaysEntries, scopes]);
 
   // Delete an entry by id
   const deleteEntry = useCallback((id) => {
