@@ -366,8 +366,16 @@ html, body, #root, #app {
   color: #bbb;
 }
 
+.pmd-session-time.overdue {
+  color: #666;
+}
+
 .pmd-session-time.warning {
   color: #ffff00;
+}
+
+.pmd-session-time.warning.overdue {
+  color: #cc6600;
 }
 
 .pmd-controls {

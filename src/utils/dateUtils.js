@@ -2,8 +2,11 @@ import { SECS_IN_MINUTE, MINS_IN_HOUR, MS_IN_SECOND } from './constants';
 
 /**
  * Format seconds to human readable string (e.g., "1:23" or "1:23:45")
+ * @param {number} totalSeconds - Total seconds to format
+ * @param {boolean} showHours - Always show hours component
+ * @param {boolean} condensed - If true, show "5m" for >= 60s, "0:45" for < 60s
  */
-export function formatTime(totalSeconds, showHours = false) {
+export function formatTime(totalSeconds, showHours = false, condensed = false) {
   const isNegative = totalSeconds < 0;
   totalSeconds = Math.abs(Math.floor(totalSeconds));
 
@@ -14,7 +17,11 @@ export function formatTime(totalSeconds, showHours = false) {
   const pad = (n) => n.toString().padStart(2, '0');
 
   let result;
-  if (hours > 0 || showHours) {
+  if (condensed && totalSeconds >= 60) {
+    // Condensed format: just show minutes (e.g., "5m", "42m")
+    const totalMinutes = Math.ceil(totalSeconds / 60);
+    result = `${totalMinutes}m`;
+  } else if (hours > 0 || showHours) {
     result = `${hours}:${pad(minutes)}:${pad(seconds)}`;
   } else {
     result = `${minutes}:${pad(seconds)}`;

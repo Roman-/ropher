@@ -54,10 +54,13 @@ export function PomodoroView() {
     return overdue ? '#000000' : '#ffffff';
   }, [overdue]);
 
-  // Format time display
-  const timeDisplay = formatTime(msLeft / 1000);
+  // Format time display (condensed: show "5m" when >= 1 min, "0:45" when < 1 min)
+  const timeDisplay = formatTime(msLeft / 1000, false, true);
 
   // Session time warning (> 55 minutes)
+  // Purpose: Make the user aware they've spent significantly more time than planned.
+  // This highlights the tendency to underestimate task duration and encourages
+  // better time awareness and estimation in future sessions.
   const sessionWarning = sessionSeconds >= 55 * SECS_IN_MINUTE;
 
   return (
@@ -102,7 +105,7 @@ export function PomodoroView() {
 
       {/* Bottom row - controls */}
       <div className="pmd-bottom">
-        <div className={`pmd-session-time ${sessionWarning ? 'warning' : ''}`}>
+        <div className={`pmd-session-time ${sessionWarning ? 'warning' : ''} ${overdue ? 'overdue' : ''}`}>
           {formatTime(sessionSeconds, true)}
         </div>
 
