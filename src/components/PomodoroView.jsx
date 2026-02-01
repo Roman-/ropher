@@ -68,7 +68,7 @@ export function PomodoroView() {
       className="pomodoro-view"
       style={{ backgroundColor: getBgColor(), color: getTextColor() }}
     >
-      {/* Top row - interval buttons and settings */}
+      {/* Top row - Duration presets and settings */}
       <div className="pmd-top">
         <div className="pmd-intervals">
           {POMODORO_INTERVALS.map((interval, idx) => (

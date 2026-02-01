@@ -40,7 +40,7 @@ export function GoalSetter() {
   return (
     <div className="goal-setter">
       <h2 className="goal-title">
-        Intention for this {selectedTask.name}
+        Goal for this {selectedTask.name}
       </h2>
 
       <input
