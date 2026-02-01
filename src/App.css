@@ -77,8 +77,8 @@ html, body, #root, #app {
   pointer-events: auto;
 }
 
-/* ===== Task Bar ===== */
-.task-bar {
+/* ===== Scope Bar ===== */
+.scope-bar {
   display: flex;
   flex-direction: row;
   gap: 0.5rem;
@@ -87,7 +87,7 @@ html, body, #root, #app {
   z-index: 1;
 }
 
-.task-button {
+.scope-button {
   flex: 1;
   height: 17vh;
   font-size: 3vw;
@@ -99,11 +99,11 @@ html, body, #root, #app {
   transition: opacity 0.2s;
 }
 
-.task-button:hover {
+.scope-button:hover {
   opacity: 0.8;
 }
 
-.task-button:active {
+.scope-button:active {
   opacity: 0.6;
 }
 

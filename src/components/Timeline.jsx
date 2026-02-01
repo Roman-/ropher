@@ -71,7 +71,7 @@ export function Timeline() {
             style={{
               top: `${pos.top}%`,
               height: `${pos.height}%`,
-              backgroundColor: `#${entry.task?.color || '666'}55`,
+              backgroundColor: `#${entry.scope?.color || '666'}55`,
             }}
           />
         );

@@ -3,7 +3,7 @@ import { useApp } from '../contexts/AppContext';
 import { DEFAULT_GOALS } from '../utils/constants';
 
 export function GoalSetter() {
-  const { selectedTask, settings, startPomodoroWithGoal, cancelGoalSetter } = useApp();
+  const { selectedScope, settings, startPomodoroWithGoal, cancelGoalSetter } = useApp();
   const [goal, setGoal] = useState('');
   const inputRef = useRef(null);
 
@@ -35,12 +35,12 @@ export function GoalSetter() {
     goalHints.unshift(settings.lastGoal);
   }
 
-  if (!selectedTask) return null;
+  if (!selectedScope) return null;
 
   return (
     <div className="goal-setter">
       <h2 className="goal-title">
-        Goal for this {selectedTask.name}
+        Goal for this {selectedScope.name}
       </h2>
 
       <input

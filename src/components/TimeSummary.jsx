@@ -2,19 +2,19 @@ import { useApp } from '../contexts/AppContext';
 import { msToHumanString } from '../utils/dateUtils';
 
 export function TimeSummary() {
-  const { tasks, getTimeSpentByTask } = useApp();
-  const timeByTask = getTimeSpentByTask();
+  const { scopes, getTimeSpentByScope } = useApp();
+  const timeByScope = getTimeSpentByScope();
 
   return (
     <div className="time-summary">
-      {tasks.map((task) => (
+      {scopes.map((scope) => (
         <div
-          key={task.id}
+          key={scope.id}
           className="time-summary-box"
-          style={{ borderBottomColor: `#${task.color}aa` }}
+          style={{ borderBottomColor: `#${scope.color}aa` }}
         >
-          {timeByTask[task.id] > 0
-            ? msToHumanString(timeByTask[task.id])
+          {timeByScope[scope.id] > 0
+            ? msToHumanString(timeByScope[scope.id])
             : '0'}
         </div>
       ))}

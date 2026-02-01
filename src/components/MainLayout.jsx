@@ -1,5 +1,5 @@
 import { Clock } from './Clock';
-import { TaskBar } from './TaskBar';
+import { ScopeBar } from './ScopeBar';
 import { Timeline } from './Timeline';
 import { TimeSummary } from './TimeSummary';
 import { QuoteDisplay } from './QuoteDisplay';
@@ -15,9 +15,9 @@ export function MainLayout() {
           <TimeSummary />
         </div>
 
-        {/* Center column - task buttons and clock */}
+        {/* Center column - scope buttons and clock */}
         <div className="center-column">
-          <TaskBar />
+          <ScopeBar />
           <Clock />
         </div>
 

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback } f
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useEntries } from '../hooks/useEntries';
 import { usePomodoro } from '../hooks/usePomodoro';
-import { DEFAULT_TASKS, STORAGE_KEYS, CLOCK_SIZES } from '../utils/constants';
+import { DEFAULT_SCOPES, STORAGE_KEYS, CLOCK_SIZES } from '../utils/constants';
 
 const AppContext = createContext(null);
 
@@ -12,14 +12,14 @@ const INITIAL_STATE = (() => {
     const saved = localStorage.getItem(STORAGE_KEYS.POMODORO);
     if (saved) {
       const state = JSON.parse(saved);
-      if (state.taskId && state.startTime) {
-        return { view: 'pomodoro', taskId: state.taskId };
+      if (state.scopeId && state.startTime) {
+        return { view: 'pomodoro', scopeId: state.scopeId };
       }
     }
   } catch {
     // Ignore errors
   }
-  return { view: 'main', taskId: null };
+  return { view: 'main', scopeId: null };
 })();
 
 export function AppProvider({ children }) {
@@ -57,17 +57,17 @@ export function AppProvider({ children }) {
     }
   }, [setSettings]);
 
-  // Entries management - pass tasks for future configurability
-  const entriesApi = useEntries(DEFAULT_TASKS);
+  // Entries management - pass scopes for future configurability
+  const entriesApi = useEntries(DEFAULT_SCOPES);
 
   // Pomodoro management
   const pomodoroApi = usePomodoro(entriesApi.addEntry, setSettings);
 
   // Current view state - initialized based on recovery check
   const [view, setView] = useState(INITIAL_STATE.view);
-  const [selectedTask, setSelectedTask] = useState(() => {
-    if (INITIAL_STATE.taskId) {
-      return DEFAULT_TASKS.find(t => t.id === INITIAL_STATE.taskId) || null;
+  const [selectedScope, setSelectedScope] = useState(() => {
+    if (INITIAL_STATE.scopeId) {
+      return DEFAULT_SCOPES.find(s => s.id === INITIAL_STATE.scopeId) || null;
     }
     return null;
   });
@@ -83,29 +83,29 @@ export function AppProvider({ children }) {
   // Get current clock size in vw
   const getClockSize = () => CLOCK_SIZES[settings.clockSizeIndex];
 
-  // Select task and go to goal setter
-  const selectTask = (task) => {
-    setSelectedTask(task);
+  // Select scope and go to goal setter
+  const selectScope = (scope) => {
+    setSelectedScope(scope);
     setView('goalSetter');
   };
 
   // Start pomodoro with goal
   const startPomodoroWithGoal = (goal) => {
-    if (!selectedTask) return;
-    pomodoroApi.startPomodoro(selectedTask, goal);
+    if (!selectedScope) return;
+    pomodoroApi.startPomodoro(selectedScope, goal);
     setView('pomodoro');
   };
 
   // Cancel goal setter and go back
   const cancelGoalSetter = () => {
-    setSelectedTask(null);
+    setSelectedScope(null);
     setView('main');
   };
 
   // Finish pomodoro and return to main
   const finishAndReturn = () => {
     pomodoroApi.finishPomodoro();
-    setSelectedTask(null);
+    setSelectedScope(null);
     setView('main');
   };
 
@@ -113,14 +113,14 @@ export function AppProvider({ children }) {
   const recoveryDone = useRef(false);
   useEffect(() => {
     if (!recoveryDone.current && INITIAL_STATE.view === 'pomodoro') {
-      pomodoroApi.recoverPomodoro(DEFAULT_TASKS);
+      pomodoroApi.recoverPomodoro(DEFAULT_SCOPES);
       recoveryDone.current = true;
     }
   }, [pomodoroApi]);
 
   const value = {
     // Static data
-    tasks: DEFAULT_TASKS,
+    scopes: DEFAULT_SCOPES,
 
     // Settings
     settings,
@@ -142,8 +142,8 @@ export function AppProvider({ children }) {
     // View management
     view,
     setView,
-    selectedTask,
-    selectTask,
+    selectedScope,
+    selectScope,
     startPomodoroWithGoal,
     cancelGoalSetter,
     finishAndReturn,

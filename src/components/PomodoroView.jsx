@@ -6,7 +6,7 @@ import { SettingsMenu } from './SettingsMenu';
 
 export function PomodoroView() {
   const {
-    currentTask,
+    currentScope,
     currentGoal,
     isPlaying,
     intervalIndex,
@@ -47,8 +47,8 @@ export function PomodoroView() {
   // Determine background color
   const getBgColor = useCallback(() => {
     if (overdue) return '#ffffff';
-    return `#${currentTask?.color || '666'}22`;
-  }, [overdue, currentTask]);
+    return `#${currentScope?.color || '666'}22`;
+  }, [overdue, currentScope]);
 
   const getTextColor = useCallback(() => {
     return overdue ? '#000000' : '#ffffff';
@@ -59,7 +59,7 @@ export function PomodoroView() {
 
   // Session time warning (> 55 minutes)
   // Purpose: Make the user aware they've spent significantly more time than planned.
-  // This highlights the tendency to underestimate task duration and encourages
+  // This highlights the tendency to underestimate session duration and encourages
   // better time awareness and estimation in future sessions.
   const sessionWarning = sessionSeconds >= 55 * SECS_IN_MINUTE;
 

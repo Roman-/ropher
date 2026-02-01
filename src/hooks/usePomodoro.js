@@ -16,7 +16,7 @@ export function usePomodoro(addEntry, saveSettings) {
   // Timer state
   const [isActive, setIsActive] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTask, setCurrentTask] = useState(null);
+  const [currentScope, setCurrentScope] = useState(null);
   const [currentGoal, setCurrentGoal] = useState('');
   const [intervalIndex, setIntervalIndex] = useState(DEFAULT_INTERVAL_INDEX);
   const [msRemaining, setMsRemaining] = useState(0);
@@ -75,10 +75,10 @@ export function usePomodoro(addEntry, saveSettings) {
 
   // Save pomodoro state for recovery
   const savePomodoroState = useCallback(() => {
-    if (!isActive || !currentTask) return;
+    if (!isActive || !currentScope) return;
 
     const state = {
-      taskId: currentTask.id,
+      scopeId: currentScope.id,
       goal: currentGoal,
       startTime: startTimeRef.current,
       msRemaining,
@@ -88,7 +88,7 @@ export function usePomodoro(addEntry, saveSettings) {
       intervalIndex,
     };
     localStorage.setItem(STORAGE_KEYS.POMODORO, JSON.stringify(state));
-  }, [isActive, currentTask, currentGoal, msRemaining, launchedTime, totalWorkMs, isPlaying, intervalIndex]);
+  }, [isActive, currentScope, currentGoal, msRemaining, launchedTime, totalWorkMs, isPlaying, intervalIndex]);
 
   // Clear saved pomodoro state
   const clearPomodoroState = useCallback(() => {
@@ -96,10 +96,10 @@ export function usePomodoro(addEntry, saveSettings) {
   }, []);
 
   // Start a new pomodoro
-  const startPomodoro = useCallback((task, goal) => {
+  const startPomodoro = useCallback((scope, goal) => {
     setIsActive(true);
     setIsPlaying(true);
-    setCurrentTask(task);
+    setCurrentScope(scope);
     setCurrentGoal(goal);
     setIntervalIndex(DEFAULT_INTERVAL_INDEX);
     setMsRemaining(POMODORO_INTERVALS[DEFAULT_INTERVAL_INDEX] * MS_IN_MINUTE);
@@ -121,8 +121,8 @@ export function usePomodoro(addEntry, saveSettings) {
 
     if (isPlaying) {
       // Pausing - record the entry
-      if (currentTask && startTimeRef.current) {
-        addEntry(currentTask.id, startTimeRef.current, Date.now());
+      if (currentScope && startTimeRef.current) {
+        addEntry(currentScope.id, startTimeRef.current, Date.now());
         setTotalWorkMs((prev) => prev + msPassed);
       }
       // Update msRemaining to reflect time spent
@@ -132,7 +132,7 @@ export function usePomodoro(addEntry, saveSettings) {
     // Reset start time for next segment
     startTimeRef.current = Date.now();
     setIsPlaying((prev) => !prev);
-  }, [isPlaying, currentTask, addEntry, getMsPassed, getMsLeft]);
+  }, [isPlaying, currentScope, addEntry, getMsPassed, getMsLeft]);
 
   // Add time to the timer
   const addTime = useCallback((ms) => {
@@ -152,22 +152,22 @@ export function usePomodoro(addEntry, saveSettings) {
     const newMs = POMODORO_INTERVALS[index] * MS_IN_MINUTE;
     const msPassed = getMsPassed(); // Capture first before any ref mutations
 
-    if (isPlaying && currentTask && startTimeRef.current) {
+    if (isPlaying && currentScope && startTimeRef.current) {
       // Record the work done in the current segment before changing
-      addEntry(currentTask.id, startTimeRef.current, Date.now());
+      addEntry(currentScope.id, startTimeRef.current, Date.now());
       setTotalWorkMs((prev) => prev + msPassed);
     }
 
     // Start a fresh segment with the new interval
     startTimeRef.current = Date.now();
     setMsRemaining(newMs);
-  }, [isPlaying, currentTask, addEntry, getMsPassed]);
+  }, [isPlaying, currentScope, addEntry, getMsPassed]);
 
   // Finish the pomodoro
   const finishPomodoro = useCallback(() => {
     // Record final entry if still playing
-    if (isPlaying && currentTask && startTimeRef.current) {
-      addEntry(currentTask.id, startTimeRef.current, Date.now());
+    if (isPlaying && currentScope && startTimeRef.current) {
+      addEntry(currentScope.id, startTimeRef.current, Date.now());
     }
 
     // Clear timer
@@ -179,7 +179,7 @@ export function usePomodoro(addEntry, saveSettings) {
     // Reset state
     setIsActive(false);
     setIsPlaying(false);
-    setCurrentTask(null);
+    setCurrentScope(null);
     setCurrentGoal('');
     setMsRemaining(0);
     setLaunchedTime(null);
@@ -188,18 +188,18 @@ export function usePomodoro(addEntry, saveSettings) {
 
     // Clear saved state
     clearPomodoroState();
-  }, [isPlaying, currentTask, addEntry, clearPomodoroState]);
+  }, [isPlaying, currentScope, addEntry, clearPomodoroState]);
 
   // Check for unsaved pomodoro on mount
-  const recoverPomodoro = useCallback((tasks) => {
+  const recoverPomodoro = useCallback((scopes) => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.POMODORO);
       if (!saved) return false;
 
       const state = JSON.parse(saved);
-      const task = tasks.find((t) => t.id === state.taskId);
+      const scope = scopes.find((s) => s.id === state.scopeId);
 
-      if (!task || !state.startTime) {
+      if (!scope || !state.startTime) {
         clearPomodoroState();
         return false;
       }
@@ -207,7 +207,7 @@ export function usePomodoro(addEntry, saveSettings) {
       // Restore state
       setIsActive(true);
       setIsPlaying(state.isPlaying);
-      setCurrentTask(task);
+      setCurrentScope(scope);
       setCurrentGoal(state.goal || '');
       setIntervalIndex(state.intervalIndex || DEFAULT_INTERVAL_INDEX);
       setMsRemaining(state.msRemaining);
@@ -237,7 +237,7 @@ export function usePomodoro(addEntry, saveSettings) {
     // State
     isActive,
     isPlaying,
-    currentTask,
+    currentScope,
     currentGoal,
     intervalIndex,
     msRemaining,

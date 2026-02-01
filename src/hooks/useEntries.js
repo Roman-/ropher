@@ -5,10 +5,10 @@ import { getCleanupCutoff, isToday, generateId } from '../utils/dateUtils';
 
 /**
  * Hook for managing time entries with automatic 2-day cleanup
- * Entry structure: { id, taskId, start, end } - ISO UTC strings
- * @param {Array} tasks - Available tasks (passed from context for future configurability)
+ * Entry structure: { id, scopeId, start, end } - ISO UTC strings
+ * @param {Array} scopes - Available scopes (passed from context for future configurability)
  */
-export function useEntries(tasks) {
+export function useEntries(scopes) {
   const [entries, setEntries] = useLocalStorage(STORAGE_KEYS.ENTRIES, []);
 
   // Cleanup entries older than 2 days on mount
@@ -24,7 +24,7 @@ export function useEntries(tasks) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Add a new entry
-  const addEntry = useCallback((taskId, start, end) => {
+  const addEntry = useCallback((scopeId, start, end) => {
     const startDate = new Date(start);
     const endDate = new Date(end);
     const duration = endDate - startDate;
@@ -37,7 +37,7 @@ export function useEntries(tasks) {
 
     const entry = {
       id: generateId(),
-      taskId,
+      scopeId,
       start: startDate.toISOString(),
       end: endDate.toISOString(),
     };
@@ -50,10 +50,10 @@ export function useEntries(tasks) {
   const getTodaysEntries = useCallback(() => {
     return entries.filter((entry) => isToday(entry.start) || isToday(entry.end))
       .map((entry) => {
-        const task = tasks.find((t) => t.id === entry.taskId);
+        const scope = scopes.find((s) => s.id === entry.scopeId);
         return {
           ...entry,
-          task,
+          scope,
           start: new Date(entry.start),
           end: new Date(entry.end),
           ms: new Date(entry.end) - new Date(entry.start),
@@ -61,24 +61,24 @@ export function useEntries(tasks) {
       });
   }, [entries]);
 
-  // Get time spent per task today
-  const getTimeSpentByTask = useCallback(() => {
+  // Get time spent per scope today
+  const getTimeSpentByScope = useCallback(() => {
     const todaysEntries = getTodaysEntries();
-    const timeByTask = {};
+    const timeByScope = {};
 
-    // Initialize all tasks with 0
-    tasks.forEach((task) => {
-      timeByTask[task.id] = 0;
+    // Initialize all scopes with 0
+    scopes.forEach((scope) => {
+      timeByScope[scope.id] = 0;
     });
 
-    // Sum up time for each task
+    // Sum up time for each scope
     todaysEntries.forEach((entry) => {
-      if (Object.prototype.hasOwnProperty.call(timeByTask, entry.taskId)) {
-        timeByTask[entry.taskId] += entry.ms;
+      if (Object.prototype.hasOwnProperty.call(timeByScope, entry.scopeId)) {
+        timeByScope[entry.scopeId] += entry.ms;
       }
     });
 
-    return timeByTask;
+    return timeByScope;
   }, [getTodaysEntries]);
 
   // Delete an entry by id
@@ -91,7 +91,7 @@ export function useEntries(tasks) {
     addEntry,
     deleteEntry,
     getTodaysEntries,
-    getTimeSpentByTask,
+    getTimeSpentByScope,
   };
 }
 
