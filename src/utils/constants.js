@@ -18,10 +18,19 @@ export const DAY_END_HOUR = 24;
 // Clock font sizes (vw units)
 export const CLOCK_SIZES = [32, 48, 64]; // normal, large, huge
 
-// Tasks (hardcoded - no backend)
-export const TASKS = [
+// Task configuration constraints
+// When making tasks user-configurable, enforce these limits
+export const TASK_LIMITS = {
+  MIN: 2,
+  MAX: 5,
+};
+
+// Default tasks - structure: { id: number, name: string, color: string (hex without #) }
+// To make configurable: load from settings/localStorage, validate against TASK_LIMITS,
+// and pass through AppContext instead of importing directly.
+export const DEFAULT_TASKS = [
   { id: 1, name: 'Work', color: '4a90d9' },
-  { id: 2, name: 'PMD', color: '7cb342' },
+  { id: 2, name: 'Misc', color: '7cb342' },
 ];
 
 // Default goals for goal setter

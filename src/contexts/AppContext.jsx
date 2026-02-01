@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback } f
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useEntries } from '../hooks/useEntries';
 import { usePomodoro } from '../hooks/usePomodoro';
-import { TASKS, STORAGE_KEYS, CLOCK_SIZES } from '../utils/constants';
+import { DEFAULT_TASKS, STORAGE_KEYS, CLOCK_SIZES } from '../utils/constants';
 
 const AppContext = createContext(null);
 
@@ -57,8 +57,8 @@ export function AppProvider({ children }) {
     }
   }, [setSettings]);
 
-  // Entries management
-  const entriesApi = useEntries();
+  // Entries management - pass tasks for future configurability
+  const entriesApi = useEntries(DEFAULT_TASKS);
 
   // Pomodoro management
   const pomodoroApi = usePomodoro(entriesApi.addEntry, setSettings);
@@ -67,7 +67,7 @@ export function AppProvider({ children }) {
   const [view, setView] = useState(INITIAL_STATE.view);
   const [selectedTask, setSelectedTask] = useState(() => {
     if (INITIAL_STATE.taskId) {
-      return TASKS.find(t => t.id === INITIAL_STATE.taskId) || null;
+      return DEFAULT_TASKS.find(t => t.id === INITIAL_STATE.taskId) || null;
     }
     return null;
   });
@@ -113,14 +113,14 @@ export function AppProvider({ children }) {
   const recoveryDone = useRef(false);
   useEffect(() => {
     if (!recoveryDone.current && INITIAL_STATE.view === 'pomodoro') {
-      pomodoroApi.recoverPomodoro(TASKS);
+      pomodoroApi.recoverPomodoro(DEFAULT_TASKS);
       recoveryDone.current = true;
     }
   }, [pomodoroApi]);
 
   const value = {
     // Static data
-    tasks: TASKS,
+    tasks: DEFAULT_TASKS,
 
     // Settings
     settings,

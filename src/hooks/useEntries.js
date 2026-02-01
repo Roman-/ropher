@@ -1,13 +1,14 @@
 import { useCallback, useEffect } from 'react';
 import { useLocalStorage } from './useLocalStorage';
-import { STORAGE_KEYS, MIN_TIME_TO_TRACK, TASKS } from '../utils/constants';
+import { STORAGE_KEYS, MIN_TIME_TO_TRACK } from '../utils/constants';
 import { getCleanupCutoff, isToday, generateId } from '../utils/dateUtils';
 
 /**
  * Hook for managing time entries with automatic 2-day cleanup
  * Entry structure: { id, taskId, start, end } - ISO UTC strings
+ * @param {Array} tasks - Available tasks (passed from context for future configurability)
  */
-export function useEntries() {
+export function useEntries(tasks) {
   const [entries, setEntries] = useLocalStorage(STORAGE_KEYS.ENTRIES, []);
 
   // Cleanup entries older than 2 days on mount
@@ -49,7 +50,7 @@ export function useEntries() {
   const getTodaysEntries = useCallback(() => {
     return entries.filter((entry) => isToday(entry.start) || isToday(entry.end))
       .map((entry) => {
-        const task = TASKS.find((t) => t.id === entry.taskId);
+        const task = tasks.find((t) => t.id === entry.taskId);
         return {
           ...entry,
           task,
@@ -66,7 +67,7 @@ export function useEntries() {
     const timeByTask = {};
 
     // Initialize all tasks with 0
-    TASKS.forEach((task) => {
+    tasks.forEach((task) => {
       timeByTask[task.id] = 0;
     });
 
