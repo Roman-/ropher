@@ -290,6 +290,20 @@ html, body, #root, #app {
   transition: background-color 0.3s, color 0.3s;
 }
 
+.pomodoro-view.blinking {
+  animation: blink-attention 0.6s ease-in-out;
+}
+
+@keyframes blink-attention {
+  0% { background-color: #ffffff; }
+  16.67% { background-color: var(--scope-bg-color); }
+  33.33% { background-color: #ffffff; }
+  50% { background-color: var(--scope-bg-color); }
+  66.67% { background-color: #ffffff; }
+  83.33% { background-color: var(--scope-bg-color); }
+  100% { background-color: #ffffff; }
+}
+
 .pmd-top {
   display: flex;
   justify-content: space-between;
