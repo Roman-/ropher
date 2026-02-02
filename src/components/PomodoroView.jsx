@@ -91,7 +91,7 @@ export function PomodoroView() {
             <span className="pmd-goal">{currentGoal}</span>
             <span className="pmd-time">
               {timeDisplay}
-              {!isPlaying && ' ⏸'}
+              {!isPlaying && ' ▮▮'}
             </span>
           </>
         ) : (
@@ -114,7 +114,7 @@ export function PomodoroView() {
             className="pmd-control-button"
             onClick={togglePlayPause}
           >
-            {isPlaying ? '⏸' : '▶'}
+            {isPlaying ? '▮▮' : '▶'}
           </button>
           <button
             className="pmd-control-button"
