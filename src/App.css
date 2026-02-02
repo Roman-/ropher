@@ -138,9 +138,9 @@ html, body, #root, #app {
 
 .hour-digit {
   position: absolute;
-  left: 2px;
+  left: 4px;
   color: #aaa;
-  font-size: 8px;
+  font-size: 12px;
   user-select: none;
 }
 
@@ -162,7 +162,7 @@ html, body, #root, #app {
 .time-summary {
   display: flex;
   flex-direction: row;
-  font-size: 10px;
+  font-size: 14px;
   text-align: center;
   margin-top: 0.25rem;
 }
