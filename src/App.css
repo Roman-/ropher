@@ -304,6 +304,7 @@ html, body, #root, #app {
 
 .pmd-interval-button {
   height: 17vh;
+  min-width: 5em;
   padding: 0 1em;
   font-size: 3vw;
   font-family: BarlowCondensedMedium, sans-serif;
