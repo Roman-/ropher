@@ -20,7 +20,7 @@ export function PomodoroView() {
     playDing,
   } = useApp();
 
-  const [, forceUpdate] = useState(0);
+  const [tick, forceUpdate] = useState(0);
 
   // Update display every 100ms
   useEffect(() => {
@@ -31,6 +31,7 @@ export function PomodoroView() {
   }, []);
 
   // Play ding when timer expires - using ref to avoid setState in effect
+  // Include tick in deps so effect runs on each timer tick
   const prevOverdueRef = useRef(false);
   useEffect(() => {
     const overdue = isOverdue();
@@ -38,7 +39,7 @@ export function PomodoroView() {
       playDing();
     }
     prevOverdueRef.current = overdue;
-  }, [isOverdue, playDing]);
+  }, [tick, isOverdue, playDing]);
 
   const msLeft = getMsLeft();
   const sessionSeconds = getSessionTime() / 1000;
