@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { STORAGE_KEYS, MIN_TIME_TO_TRACK } from '../utils/constants';
 import { getCleanupCutoff, isToday, generateId } from '../utils/dateUtils';
@@ -10,6 +10,16 @@ import { getCleanupCutoff, isToday, generateId } from '../utils/dateUtils';
  */
 export function useEntries(scopes) {
   const [entries, setEntries] = useLocalStorage(STORAGE_KEYS.ENTRIES, []);
+  const [currentDay, setCurrentDay] = useState(() => new Date().toDateString());
+
+  // Check every 10s if the day has changed (forces re-render of summaries after midnight)
+  useEffect(() => {
+    const id = setInterval(() => {
+      const today = new Date().toDateString();
+      if (today !== currentDay) setCurrentDay(today);
+    }, 10_000);
+    return () => clearInterval(id);
+  }, [currentDay]);
 
   // Cleanup entries older than 2 days on mount
   useEffect(() => {
@@ -59,7 +69,7 @@ export function useEntries(scopes) {
           ms: new Date(entry.end) - new Date(entry.start),
         };
       });
-  }, [entries, scopes]);
+  }, [entries, scopes, currentDay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Get time spent per scope today
   const getTimeSpentByScope = useCallback(() => {
