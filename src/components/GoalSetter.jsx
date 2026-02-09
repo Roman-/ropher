@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { DEFAULT_GOALS } from '../utils/constants';
+import { PINNED_GOALS_COUNT } from '../utils/constants';
 
 export function GoalSetter() {
-  const { selectedScope, settings, startPomodoroWithGoal, cancelGoalSetter } = useApp();
+  const { selectedScope, startPomodoroWithGoal, cancelGoalSetter, getGoalsForScope } = useApp();
   const [goal, setGoal] = useState('');
   const inputRef = useRef(null);
 
@@ -29,13 +29,9 @@ export function GoalSetter() {
     }
   };
 
-  // Build goal hints - include last goal if different from defaults
-  const goalHints = [...DEFAULT_GOALS];
-  if (settings.lastGoal && !DEFAULT_GOALS.includes(settings.lastGoal)) {
-    goalHints.unshift(settings.lastGoal);
-  }
-
   if (!selectedScope) return null;
+
+  const goals = getGoalsForScope(selectedScope.id);
 
   return (
     <div className="goal-setter">
@@ -53,14 +49,14 @@ export function GoalSetter() {
         onKeyPress={handleKeyPress}
       />
 
-      <div className="goal-hints">
-        {goalHints.map((hint, i) => (
+      <div className="goal-grid">
+        {goals.map((g, i) => (
           <button
-            key={i}
-            className="goal-hint-button"
-            onClick={() => startPomodoroWithGoal(hint)}
+            key={`${i}-${g}`}
+            className={`goal-grid-button ${i < PINNED_GOALS_COUNT ? 'pinned' : 'recent'}`}
+            onClick={() => startPomodoroWithGoal(g)}
           >
-            {hint}
+            {g}
           </button>
         ))}
       </div>

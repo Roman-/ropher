@@ -82,7 +82,7 @@ export function SettingsMenu() {
             className="settings-link"
             onClick={() => { setView('settings'); setIsOpen(false); }}
           >
-            Manage Scopes →
+            Settings →
           </div>
         </div>
       )}

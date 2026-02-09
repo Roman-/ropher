@@ -43,6 +43,10 @@ export const DEFAULT_SCOPES = [
 // Default goals for goal setter
 export const DEFAULT_GOALS = ['≈', 'Clear main', 'Define goal'];
 
+// Goal grid constraints
+export const PINNED_GOALS_COUNT = 3;
+export const MAX_RECENT_GOALS = 9;
+
 // Motivational quotes (hardcoded)
 export const QUOTES = [
   'The secret of getting ahead is getting started.',

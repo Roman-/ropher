@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback, us
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useEntries } from '../hooks/useEntries';
 import { usePomodoro } from '../hooks/usePomodoro';
-import { DEFAULT_SCOPES, STORAGE_KEYS, CLOCK_SIZES, SCOPE_LIMITS, PRESET_COLORS } from '../utils/constants';
+import { DEFAULT_SCOPES, DEFAULT_GOALS, STORAGE_KEYS, CLOCK_SIZES, SCOPE_LIMITS, PRESET_COLORS, PINNED_GOALS_COUNT, MAX_RECENT_GOALS } from '../utils/constants';
 
 const AppContext = createContext(null);
 
@@ -48,6 +48,30 @@ export function AppProvider({ children }) {
   // Derive validated scopes from settings
   const scopes = useMemo(() => validateScopes(settings.scopes), [settings.scopes]);
 
+  // Migrate: initialize pinnedGoals and recentGoals if absent
+  useEffect(() => {
+    if (!settings.pinnedGoals) {
+      setSettings((prev) => {
+        if (prev.pinnedGoals) return prev; // already migrated (race check)
+        const currentScopes = validateScopes(prev.scopes);
+        const pinnedGoals = {};
+        const recentGoals = {};
+        for (const s of currentScopes) {
+          pinnedGoals[s.id] = [...DEFAULT_GOALS];
+          recentGoals[s.id] = [];
+        }
+        // Seed first scope's recents with lastGoal if it exists and isn't pinned
+        if (prev.lastGoal && currentScopes.length > 0) {
+          const firstId = currentScopes[0].id;
+          if (!pinnedGoals[firstId].includes(prev.lastGoal)) {
+            recentGoals[firstId] = [prev.lastGoal];
+          }
+        }
+        return { ...prev, pinnedGoals, recentGoals };
+      });
+    }
+  }, [settings.pinnedGoals, setSettings]);
+
   // Fullscreen state (synced with document.fullscreenElement)
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
 
@@ -76,6 +100,40 @@ export function AppProvider({ children }) {
     }
   }, [setSettings]);
 
+  // Goal functions
+  const addRecentGoal = useCallback((scopeId, goal) => {
+    setSettings((prev) => {
+      const pinned = (prev.pinnedGoals || {})[scopeId] || [];
+      if (pinned.includes(goal)) return prev; // don't add pinned goals to recents
+      const oldRecents = (prev.recentGoals || {})[scopeId] || [];
+      const deduped = [goal, ...oldRecents.filter(g => g !== goal)].slice(0, MAX_RECENT_GOALS);
+      return {
+        ...prev,
+        recentGoals: { ...prev.recentGoals, [scopeId]: deduped },
+      };
+    });
+  }, [setSettings]);
+
+  const updatePinnedGoals = useCallback((scopeId, pinnedArray) => {
+    setSettings((prev) => {
+      const capped = pinnedArray.slice(0, PINNED_GOALS_COUNT);
+      // Remove newly-pinned goals from recents
+      const oldRecents = (prev.recentGoals || {})[scopeId] || [];
+      const filteredRecents = oldRecents.filter(g => !capped.includes(g));
+      return {
+        ...prev,
+        pinnedGoals: { ...prev.pinnedGoals, [scopeId]: capped },
+        recentGoals: { ...prev.recentGoals, [scopeId]: filteredRecents },
+      };
+    });
+  }, [setSettings]);
+
+  const getGoalsForScope = useCallback((scopeId) => {
+    const pinned = (settings.pinnedGoals || {})[scopeId] || DEFAULT_GOALS;
+    const recent = (settings.recentGoals || {})[scopeId] || [];
+    return [...pinned, ...recent].slice(0, PINNED_GOALS_COUNT + MAX_RECENT_GOALS);
+  }, [settings.pinnedGoals, settings.recentGoals]);
+
   // Scope CRUD functions
   const updateScope = useCallback((id, updates) => {
     setSettings((prev) => ({
@@ -92,12 +150,15 @@ export function AppProvider({ children }) {
       if (currentScopes.length >= SCOPE_LIMITS.MAX) return prev;
 
       const maxId = Math.max(...currentScopes.map(s => s.id), 0);
+      const newId = maxId + 1;
       const usedColors = new Set(currentScopes.map(s => s.color));
       const availableColor = PRESET_COLORS.find(c => !usedColors.has(c)) || PRESET_COLORS[0];
 
       return {
         ...prev,
-        scopes: [...currentScopes, { id: maxId + 1, name: 'New', color: availableColor }],
+        scopes: [...currentScopes, { id: newId, name: 'New', color: availableColor }],
+        pinnedGoals: { ...prev.pinnedGoals, [newId]: [...DEFAULT_GOALS] },
+        recentGoals: { ...prev.recentGoals, [newId]: [] },
       };
     });
   }, [setSettings]);
@@ -106,9 +167,13 @@ export function AppProvider({ children }) {
     setSettings((prev) => {
       const currentScopes = prev.scopes || DEFAULT_SCOPES;
       if (currentScopes.length <= SCOPE_LIMITS.MIN) return prev;
+      const { [id]: _p, ...restPinned } = prev.pinnedGoals || {};
+      const { [id]: _r, ...restRecent } = prev.recentGoals || {};
       return {
         ...prev,
         scopes: currentScopes.filter(s => s.id !== id),
+        pinnedGoals: restPinned,
+        recentGoals: restRecent,
       };
     });
   }, [setSettings]);
@@ -127,7 +192,15 @@ export function AppProvider({ children }) {
   }, [setSettings]);
 
   const resetScopes = useCallback(() => {
-    setSettings((prev) => ({ ...prev, scopes: DEFAULT_SCOPES }));
+    setSettings((prev) => {
+      const pinnedGoals = {};
+      const recentGoals = {};
+      for (const s of DEFAULT_SCOPES) {
+        pinnedGoals[s.id] = [...DEFAULT_GOALS];
+        recentGoals[s.id] = [];
+      }
+      return { ...prev, scopes: DEFAULT_SCOPES, pinnedGoals, recentGoals };
+    });
   }, [setSettings]);
 
   // Entries management - pass scopes for future configurability
@@ -165,6 +238,7 @@ export function AppProvider({ children }) {
   // Start pomodoro with goal
   const startPomodoroWithGoal = (goal) => {
     if (!selectedScope) return;
+    addRecentGoal(selectedScope.id, goal);
     pomodoroApi.startPomodoro(selectedScope, goal);
     setView('pomodoro');
   };
@@ -199,6 +273,11 @@ export function AppProvider({ children }) {
     removeScope,
     reorderScopes,
     resetScopes,
+
+    // Goals
+    addRecentGoal,
+    updatePinnedGoals,
+    getGoalsForScope,
 
     // Settings
     settings,

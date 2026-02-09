@@ -1,5 +1,6 @@
 import { useApp } from '../contexts/AppContext';
 import { ScopeEditorItem } from './ScopeEditorItem';
+import { PinnedGoalsEditor } from './PinnedGoalsEditor';
 import { SCOPE_LIMITS } from '../utils/constants';
 
 export function SettingsView() {
@@ -38,6 +39,13 @@ export function SettingsView() {
           >
             + Add Scope
           </button>
+        </section>
+
+        <section className="settings-section">
+          <h2 className="settings-section-title">Pinned Goals</h2>
+          {scopes.map((scope) => (
+            <PinnedGoalsEditor key={scope.id} scope={scope} />
+          ))}
         </section>
       </div>
 

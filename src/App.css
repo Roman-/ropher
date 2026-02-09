@@ -220,27 +220,42 @@ html, body, #root, #app {
   border-color: #888;
 }
 
-.goal-hints {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+.goal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
+  width: 80%;
+  max-width: 600px;
 }
 
-.goal-hint-button {
-  min-width: 7em;
-  padding: 0.5em 1em;
+.goal-grid-button {
+  padding: 0.5em 0.5em;
   font-size: 1.3em;
   font-family: inherit;
-  background-color: #333;
   color: #fff;
-  border: 1px solid #555;
   border-radius: 6px;
   cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.goal-hint-button:hover {
+.goal-grid-button.pinned {
   background-color: #444;
+  border: 1px solid #666;
+}
+
+.goal-grid-button.pinned:hover {
+  background-color: #555;
+}
+
+.goal-grid-button.recent {
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+}
+
+.goal-grid-button.recent:hover {
+  background-color: #383838;
 }
 
 .goal-actions {
@@ -730,4 +745,52 @@ html, body, #root, #app {
 
 .settings-reset-button:hover {
   background-color: #dc354522;
+}
+
+/* ===== Pinned Goals Editor ===== */
+.pinned-goals-editor {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+}
+
+.pinned-goals-scope-name {
+  font-size: 1rem;
+  font-family: BarlowCondensedMedium, sans-serif;
+  margin-bottom: 0.5rem;
+}
+
+.pinned-goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pinned-goal-text {
+  padding: 0.4rem 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #ccc;
+}
+
+.pinned-goal-text:hover {
+  background-color: #333;
+}
+
+.pinned-goal-input {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  font-size: 1rem;
+  font-family: inherit;
+  background-color: #333;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+}
+
+.pinned-goal-input:focus {
+  outline: none;
+  border-color: #888;
 }
