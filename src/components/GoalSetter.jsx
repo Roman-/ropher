@@ -35,19 +35,37 @@ export function GoalSetter() {
 
   return (
     <div className="goal-setter">
-      <h2 className="goal-title">
-        Goal for this {selectedScope.name}
-      </h2>
+      <div className="goal-input-row">
+        <button
+          className="goal-action-button goal-cancel"
+          onClick={cancelGoalSetter}
+        >
+          back
+        </button>
 
-      <input
-        ref={inputRef}
-        type="text"
-        className="goal-input"
-        placeholder="Enter your goal..."
-        value={goal}
-        onChange={(e) => setGoal(e.target.value)}
-        onKeyPress={handleKeyPress}
-      />
+        <div className="goal-input-column">
+          <h2 className="goal-title">
+            Goal for this {selectedScope.name}
+          </h2>
+
+          <input
+            ref={inputRef}
+            type="text"
+            className="goal-input"
+            placeholder="Enter your goal..."
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+            onKeyPress={handleKeyPress}
+          />
+        </div>
+
+        <button
+          className="goal-action-button goal-go"
+          onClick={handleSubmit}
+        >
+          GO
+        </button>
+      </div>
 
       <div className="goal-grid">
         {goals.map((g, i) => (
@@ -59,21 +77,6 @@ export function GoalSetter() {
             {g}
           </button>
         ))}
-      </div>
-
-      <div className="goal-actions">
-        <button
-          className="goal-action-button goal-cancel"
-          onClick={cancelGoalSetter}
-        >
-          back
-        </button>
-        <button
-          className="goal-action-button goal-go"
-          onClick={handleSubmit}
-        >
-          GO
-        </button>
       </div>
     </div>
   );
