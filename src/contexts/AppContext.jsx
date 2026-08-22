@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback, us
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useEntries } from '../hooks/useEntries';
 import { usePomodoro } from '../hooks/usePomodoro';
+import { useReminders } from '../hooks/useReminders';
 import { DEFAULT_SCOPES, DEFAULT_GOALS, STORAGE_KEYS, CLOCK_SIZES, SCOPE_LIMITS, PRESET_COLORS, PINNED_GOALS_COUNT, MAX_RECENT_GOALS } from '../utils/constants';
 
 const AppContext = createContext(null);
@@ -37,16 +38,28 @@ function validateScopes(scopes) {
   return validScopes;
 }
 
+// Validate reminders array - drops anything malformed, defaults to no reminders
+function validateReminders(reminders) {
+  if (!Array.isArray(reminders)) return [];
+  return reminders.filter(r =>
+    r && typeof r.id === 'string' && typeof r.text === 'string'
+  );
+}
+
 export function AppProvider({ children }) {
   // Settings (persisted)
   const [settings, setSettings] = useLocalStorage(STORAGE_KEYS.SETTINGS, {
     clockSizeIndex: 1, // default to large (index 1)
     lastGoal: '',
     scopes: DEFAULT_SCOPES,
+    reminders: [],
   });
 
   // Derive validated scopes from settings
   const scopes = useMemo(() => validateScopes(settings.scopes), [settings.scopes]);
+
+  // Derive validated reminders from settings (none by default)
+  const reminders = useMemo(() => validateReminders(settings.reminders), [settings.reminders]);
 
   // Migrate: initialize pinnedGoals and recentGoals if absent
   useEffect(() => {
@@ -209,6 +222,9 @@ export function AppProvider({ children }) {
   // Pomodoro management
   const pomodoroApi = usePomodoro(entriesApi.addEntry, setSettings);
 
+  // Reminders management
+  const remindersApi = useReminders(reminders, setSettings);
+
   // Current view state - initialized based on recovery check
   const [view, setView] = useState(INITIAL_STATE.view);
   const [selectedScope, setSelectedScope] = useState(() => {
@@ -217,6 +233,18 @@ export function AppProvider({ children }) {
     }
     return null;
   });
+
+  // Section of the settings view to scroll to when it opens (e.g. 'reminders')
+  const [settingsFocus, setSettingsFocus] = useState(null);
+
+  const clearSettingsFocus = useCallback(() => setSettingsFocus(null), []);
+
+  // Jump from a reminder window to its section in settings
+  const openReminderSettings = (reminderId) => {
+    remindersApi.dismissReminder(reminderId);
+    setSettingsFocus('reminders');
+    setView('settings');
+  };
 
   // Clock size cycling
   const cycleClockSize = () => {
@@ -296,7 +324,13 @@ export function AppProvider({ children }) {
     // Pomodoro
     ...pomodoroApi,
 
+    // Reminders
+    ...remindersApi,
+    openReminderSettings,
+
     // View management
+    settingsFocus,
+    clearSettingsFocus,
     view,
     setView,
     selectedScope,

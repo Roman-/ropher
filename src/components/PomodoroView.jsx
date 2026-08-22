@@ -8,6 +8,7 @@ export function PomodoroView() {
   const {
     currentScope,
     currentGoal,
+    isActive,
     isPlaying,
     intervalIndex,
     getMsLeft,
@@ -18,6 +19,7 @@ export function PomodoroView() {
     changeInterval,
     finishAndReturn,
     playDing,
+    showPostponedReminders,
   } = useApp();
 
   const [tick, forceUpdate] = useState(0);
@@ -39,9 +41,15 @@ export function PomodoroView() {
   // Include tick in deps so effect runs on each timer tick
   const prevOverdueRef = useRef(false);
   useEffect(() => {
+    // A recovered session renders for a frame with an empty timer, which would
+    // otherwise read as "time is up" - wait until the session is actually live
+    if (!isActive) return;
+
     const overdue = isOverdue();
     if (overdue && !prevOverdueRef.current) {
       playDing();
+      // Reminders postponed earlier pop up now that the timer is finished
+      showPostponedReminders();
       overdueStartRef.current = Date.now();
       lastBlinkMinuteRef.current = 0;
     }
@@ -50,7 +58,7 @@ export function PomodoroView() {
       lastBlinkMinuteRef.current = -1;
     }
     prevOverdueRef.current = overdue;
-  }, [tick, isOverdue, playDing]);
+  }, [tick, isActive, isOverdue, playDing, showPostponedReminders]);
 
   // Blink effect every minute when overdue
   useEffect(() => {

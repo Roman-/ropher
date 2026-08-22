@@ -1,12 +1,37 @@
+import { useEffect, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { ScopeEditorItem } from './ScopeEditorItem';
 import { PinnedGoalsEditor } from './PinnedGoalsEditor';
-import { SCOPE_LIMITS } from '../utils/constants';
+import { ReminderEditorItem } from './ReminderEditorItem';
+import { SCOPE_LIMITS, MAX_REMINDERS } from '../utils/constants';
 
 export function SettingsView() {
-  const { scopes, addScope, resetScopes, setView } = useApp();
+  const {
+    scopes,
+    addScope,
+    resetScopes,
+    setView,
+    reminders,
+    addReminder,
+    settingsFocus,
+    clearSettingsFocus,
+  } = useApp();
+
+  const remindersRef = useRef(null);
+  const highlightReminders = settingsFocus === 'reminders';
+
+  // Scroll to the reminders section when opened from a reminder window,
+  // then drop the focus so the highlight only plays once
+  useEffect(() => {
+    if (!highlightReminders) return;
+
+    remindersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const timer = setTimeout(() => clearSettingsFocus(), 1500);
+    return () => clearTimeout(timer);
+  }, [highlightReminders, clearSettingsFocus]);
 
   const canAddScope = scopes.length < SCOPE_LIMITS.MAX;
+  const canAddReminder = reminders.length < MAX_REMINDERS;
 
   const handleBack = () => {
     setView('main');
@@ -46,6 +71,32 @@ export function SettingsView() {
           {scopes.map((scope) => (
             <PinnedGoalsEditor key={scope.id} scope={scope} />
           ))}
+        </section>
+
+        <section
+          className={`settings-section ${highlightReminders ? 'highlight' : ''}`}
+          ref={remindersRef}
+        >
+          <h2 className="settings-section-title">Reminders</h2>
+          {reminders.length === 0 ? (
+            <div className="reminders-empty">
+              No reminders. A reminder pops up when you turn the display back on.
+            </div>
+          ) : (
+            <div className="reminder-editor-list">
+              {reminders.map((reminder) => (
+                <ReminderEditorItem key={reminder.id} reminder={reminder} />
+              ))}
+            </div>
+          )}
+          <button
+            className="scope-add-button"
+            onClick={addReminder}
+            disabled={!canAddReminder}
+            title={canAddReminder ? 'Add new reminder' : `Maximum ${MAX_REMINDERS} reminders allowed`}
+          >
+            + Add Reminder
+          </button>
         </section>
       </div>
 
