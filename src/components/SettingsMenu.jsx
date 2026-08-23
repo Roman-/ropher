@@ -16,6 +16,20 @@ export function SettingsMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
+  // Pull-to-refresh does nothing in the installed PWA, so offer a manual reload
+  // that also picks up a freshly deployed service worker.
+  const reloadPage = async () => {
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((r) => r.update()));
+      }
+    } catch {
+      // Ignore update failures and reload anyway
+    }
+    window.location.reload();
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     if (!isOpen) return;
@@ -75,6 +89,11 @@ export function SettingsMenu() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Reload link */}
+          <div className="settings-link" onClick={reloadPage}>
+            Reload page &#8635;
           </div>
 
           {/* Manage Scopes link */}
