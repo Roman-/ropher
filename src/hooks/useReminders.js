@@ -1,59 +1,53 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  REMINDER_FREQUENCIES,
-  DEFAULT_REMINDER_FREQUENCY,
   DEFAULT_REMINDER_TEXT,
   MAX_REMINDERS,
-  MS_IN_HOUR,
   WAKE_MIN_HIDDEN_MS,
   WAKE_HEARTBEAT_INTERVAL,
   WAKE_GAP_MS,
 } from '../utils/constants';
 import { isToday, generateId } from '../utils/dateUtils';
 
-// Look up a frequency preset, falling back to the first one
-function getFrequency(id) {
-  return REMINDER_FREQUENCIES.find((f) => f.id === id) || REMINDER_FREQUENCIES[0];
-}
-
 /**
- * Is this reminder allowed to pop up right now?
- * A reminder that was never shown is always due.
+ * Is this reminder waiting to be shown?
+ * Nothing is ever scheduled - a reminder is simply pending until it is marked
+ * done, and marking it done only settles it for the rest of the calendar day.
  */
-export function isReminderDue(reminder, now = Date.now()) {
+export function isReminderPending(reminder) {
   if (!reminder || !reminder.enabled) return false;
-  if (!reminder.lastShownAt) return true;
-
-  const { hours } = getFrequency(reminder.frequency);
-  if (hours === null) return !isToday(reminder.lastShownAt); // once per calendar day
-  return now - reminder.lastShownAt >= hours * MS_IN_HOUR;
+  return !reminder.lastDoneAt || !isToday(reminder.lastDoneAt);
 }
 
 /**
  * Hook for managing reminders.
  *
- * A reminder pops up when the display is turned back on (the app becomes
- * visible again after being away, or timers were frozen while the device
- * slept). Postponing one re-arms it for the moment the pomodoro timer ends.
+ * A reminder window may only ever cover the home screen. Every arrival at the
+ * home screen - clicking through from a finished pomodoro, backing out of the
+ * goal setter or settings, starting the app, or the display waking up while
+ * the home screen is already showing - is a fresh chance for a pending
+ * reminder to pop up. "Postpone" only ends the current visit for that
+ * reminder: it comes back on the next arrival, however much wall-clock time
+ * has passed in between.
  */
-export function useReminders(reminders, setSettings) {
-  // Ids of reminders waiting to be shown, one window at a time
-  const [queue, setQueue] = useState([]);
+export function useReminders(reminders, setSettings, isHome) {
+  // Reminders answered or postponed during the current visit to the home
+  // screen, so they stop asking until the next visit
+  const [dismissed, setDismissed] = useState([]);
 
-  // Wake detection runs outside React, so it reads reminders through a ref
-  const remindersRef = useRef(reminders);
-  useEffect(() => {
-    remindersRef.current = reminders;
-  }, [reminders]);
+  // Reminder forced on screen by the Test button - shown even when not pending
+  const [forcedId, setForcedId] = useState(null);
 
-  const enqueue = useCallback((ids) => {
-    if (!ids.length) return;
-    setQueue((prev) => [...prev, ...ids.filter((id) => !prev.includes(id))]);
-  }, []);
+  const startVisit = useCallback(() => setDismissed([]), []);
 
-  const dequeue = useCallback((id) => {
-    setQueue((prev) => prev.filter((q) => q !== id));
-  }, []);
+  // Arriving at the home screen starts a new visit; leaving it drops any test.
+  // Adjusted during render rather than in an effect so the window is already
+  // correct on the first frame of the home screen.
+  const [wasHome, setWasHome] = useState(isHome);
+  if (wasHome !== isHome) {
+    setWasHome(isHome);
+    if (isHome) setDismissed([]);
+    else setForcedId(null);
+  }
 
   // Reminder CRUD
   const updateReminder = useCallback((id, updates) => {
@@ -74,73 +68,51 @@ export function useReminders(reminders, setSettings) {
         id: generateId(),
         text: DEFAULT_REMINDER_TEXT,
         enabled: true,
-        frequency: DEFAULT_REMINDER_FREQUENCY,
-        lastShownAt: null,
         lastDoneAt: null,
-        postponed: false,
       };
       return { ...prev, reminders: [...current, newReminder] };
     });
   }, [setSettings]);
+
+  // Stop a reminder asking for the rest of this visit to the home screen
+  const closeReminder = useCallback((id) => {
+    setDismissed((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setForcedId((prev) => (prev === id ? null : prev));
+  }, []);
 
   const removeReminder = useCallback((id) => {
     setSettings((prev) => ({
       ...prev,
       reminders: (prev.reminders || []).filter((r) => r.id !== id),
     }));
-    dequeue(id);
-  }, [setSettings, dequeue]);
+    closeReminder(id);
+  }, [setSettings, closeReminder]);
 
-  // Queue every reminder that is due - called when the display wakes up
-  const checkDueReminders = useCallback(() => {
-    const now = Date.now();
-    enqueue(remindersRef.current.filter((r) => isReminderDue(r, now)).map((r) => r.id));
-  }, [enqueue]);
+  // One window at a time: the first reminder still asking on this visit
+  const activeReminder = useMemo(() => {
+    if (!isHome) return null;
 
-  // Queue everything that was postponed - called when the pomodoro timer ends
-  const showPostponedReminders = useCallback(() => {
-    const postponed = remindersRef.current.filter((r) => r.enabled && r.postponed);
-    if (!postponed.length) return;
+    const forced = forcedId ? reminders.find((r) => r.id === forcedId) : null;
+    if (forced) return forced;
 
-    const shownIds = new Set(postponed.map((r) => r.id));
-    enqueue(postponed.map((r) => r.id));
-    setSettings((prev) => ({
-      ...prev,
-      reminders: (prev.reminders || []).map((r) =>
-        shownIds.has(r.id) ? { ...r, postponed: false } : r
-      ),
-    }));
-  }, [enqueue, setSettings]);
-
-  // Show a single reminder right now (used by the Test button in settings)
-  const showReminderNow = useCallback((id) => enqueue([id]), [enqueue]);
-
-  // First queued reminder that still exists - deleted ones are skipped over
-  const activeId = queue.find((id) => reminders.some((r) => r.id === id)) || null;
-  const activeReminder = reminders.find((r) => r.id === activeId) || null;
-
-  // Stamp the reminder once its window is actually on screen
-  useEffect(() => {
-    if (activeId) {
-      updateReminder(activeId, { lastShownAt: Date.now() });
-    }
-  }, [activeId, updateReminder]);
+    return reminders.find((r) => isReminderPending(r) && !dismissed.includes(r.id)) || null;
+  }, [isHome, forcedId, reminders, dismissed]);
 
   // Reminder actions
   const completeReminder = useCallback((id) => {
-    updateReminder(id, { lastDoneAt: Date.now(), postponed: false });
-    dequeue(id);
-  }, [updateReminder, dequeue]);
+    updateReminder(id, { lastDoneAt: Date.now() });
+    closeReminder(id);
+  }, [updateReminder, closeReminder]);
 
-  const postponeReminder = useCallback((id) => {
-    updateReminder(id, { postponed: true });
-    dequeue(id);
-  }, [updateReminder, dequeue]);
+  // Postponing, and closing the window to jump to settings, are the same
+  // thing: not now, ask again next time the home screen comes up
+  const postponeReminder = closeReminder;
 
-  // Close the window without answering it (used when jumping to settings)
-  const dismissReminder = useCallback((id) => dequeue(id), [dequeue]);
+  // Show a reminder on the next render of the home screen (Test button)
+  const testReminder = useCallback((id) => setForcedId(id), []);
 
-  // Wake-up detection
+  // Wake-up detection - the display coming back on starts a new visit, so a
+  // reminder postponed before the screen went dark asks again
   useEffect(() => {
     let hiddenAt = document.visibilityState === 'hidden' ? Date.now() : null;
     let lastTick = Date.now();
@@ -153,7 +125,7 @@ export function useReminders(reminders, setSettings) {
       const hiddenFor = hiddenAt ? Date.now() - hiddenAt : 0;
       hiddenAt = null;
       lastTick = Date.now();
-      if (hiddenFor >= WAKE_MIN_HIDDEN_MS) checkDueReminders();
+      if (hiddenFor >= WAKE_MIN_HIDDEN_MS) startVisit();
     };
 
     // Fallback: a sleeping device freezes timers, and not every device fires
@@ -163,7 +135,7 @@ export function useReminders(reminders, setSettings) {
       const now = Date.now();
       const gap = now - lastTick;
       lastTick = now;
-      if (gap >= WAKE_GAP_MS) checkDueReminders();
+      if (gap >= WAKE_GAP_MS) startVisit();
     }, WAKE_HEARTBEAT_INTERVAL);
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -171,12 +143,7 @@ export function useReminders(reminders, setSettings) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(heartbeat);
     };
-  }, [checkDueReminders]);
-
-  // Check on startup too - the page may have been reloaded while the display was off
-  useEffect(() => {
-    checkDueReminders();
-  }, [checkDueReminders]);
+  }, [startVisit]);
 
   return {
     // State
@@ -191,9 +158,7 @@ export function useReminders(reminders, setSettings) {
     // Actions
     completeReminder,
     postponeReminder,
-    dismissReminder,
-    showReminderNow,
-    showPostponedReminders,
+    testReminder,
   };
 }
 

@@ -1,9 +1,9 @@
 import { useApp } from '../contexts/AppContext';
 
 /**
- * Full screen reminder window - shown on top of whatever view is active
- * when a reminder comes due (display turned on, or a postponed reminder
- * whose pomodoro timer just ended).
+ * Full screen reminder window, laid over the home screen whenever a pending
+ * reminder is waiting there. Postpone puts it off until the next time the
+ * home screen comes up; nothing is scheduled by the clock.
  */
 export function ReminderOverlay() {
   const {

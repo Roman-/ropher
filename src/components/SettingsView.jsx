@@ -80,7 +80,7 @@ export function SettingsView() {
           <h2 className="settings-section-title">Reminders</h2>
           {reminders.length === 0 ? (
             <div className="reminders-empty">
-              No reminders. A reminder pops up when you turn the display back on.
+              No reminders. A reminder pops up over the home screen whenever you come back to it.
             </div>
           ) : (
             <div className="reminder-editor-list">

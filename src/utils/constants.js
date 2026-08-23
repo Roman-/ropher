@@ -49,18 +49,10 @@ export const PINNED_GOALS_COUNT = 3;
 export const MAX_RECENT_GOALS = 9;
 
 // Reminder configuration
-// Reminders pop up when the display is turned back on (see useReminders)
+// Reminders are never scheduled - a pending one pops up over the home screen
+// the moment the home screen comes up (see useReminders)
 export const MAX_REMINDERS = 5;
 export const DEFAULT_REMINDER_TEXT = 'New reminder';
-export const DEFAULT_REMINDER_FREQUENCY = 'daily';
-
-// How often a reminder may pop up again. hours === null means "once per calendar day"
-export const REMINDER_FREQUENCIES = [
-  { id: 'daily', label: 'Once a day', hours: null },
-  { id: '4h', label: 'Every 4h', hours: 4 },
-  { id: '8h', label: 'Every 8h', hours: 8 },
-  { id: 'wake', label: 'Every wake', hours: 0 },
-];
 
 // Wake-up detection: how long the app must have been away before coming back
 // counts as "the display was turned on again"

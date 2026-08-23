@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { REMINDER_FREQUENCIES } from '../utils/constants';
+import { isReminderPending } from '../hooks/useReminders';
 
 export function ReminderEditorItem({ reminder }) {
-  const { updateReminder, removeReminder, showReminderNow } = useApp();
+  const { updateReminder, removeReminder, testReminder } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(reminder.text);
   const inputRef = useRef(null);
@@ -40,6 +40,15 @@ export function ReminderEditorItem({ reminder }) {
     }
   };
 
+  // Reminders are never scheduled: one keeps asking on every trip to the home
+  // screen until it is marked done, which settles it for the rest of the day
+  const pending = isReminderPending(reminder);
+  const statusNote = !reminder.enabled
+    ? ''
+    : pending
+      ? 'Pops up next time the home screen comes up'
+      : 'Done for today';
+
   return (
     <div className="reminder-editor-item">
       <div className="reminder-editor-row">
@@ -69,26 +78,13 @@ export function ReminderEditorItem({ reminder }) {
         </div>
       </div>
 
-      <div className="reminder-editor-row reminder-freq-row">
-        <span className="reminder-freq-label">Show</span>
-        {REMINDER_FREQUENCIES.map((freq) => (
-          <button
-            key={freq.id}
-            className={`reminder-freq-button ${reminder.frequency === freq.id ? 'active' : ''}`}
-            onClick={() => updateReminder(reminder.id, { frequency: freq.id })}
-          >
-            {freq.label}
-          </button>
-        ))}
-      </div>
-
       <div className="reminder-editor-row reminder-editor-footer">
-        <span className="reminder-editor-note">
-          {reminder.postponed ? 'Postponed - shows when the pomodoro timer ends' : ''}
+        <span className={`reminder-editor-note ${pending ? '' : 'done'}`}>
+          {statusNote}
         </span>
         <button
           className="reminder-test-button"
-          onClick={() => showReminderNow(reminder.id)}
+          onClick={() => testReminder(reminder.id)}
         >
           Test
         </button>

@@ -38,12 +38,19 @@ function validateScopes(scopes) {
   return validScopes;
 }
 
-// Validate reminders array - drops anything malformed, defaults to no reminders
+// Validate reminders array - drops anything malformed, defaults to no
+// reminders. Also normalizes reminders saved by older versions, which carried
+// a frequency preset and a "postponed until the timer ends" flag.
 function validateReminders(reminders) {
   if (!Array.isArray(reminders)) return [];
-  return reminders.filter(r =>
-    r && typeof r.id === 'string' && typeof r.text === 'string'
-  );
+  return reminders
+    .filter(r => r && typeof r.id === 'string' && typeof r.text === 'string')
+    .map(({ id, text, enabled, lastDoneAt }) => ({
+      id,
+      text,
+      enabled: enabled !== false,
+      lastDoneAt: lastDoneAt || null,
+    }));
 }
 
 export function AppProvider({ children }) {
@@ -222,9 +229,6 @@ export function AppProvider({ children }) {
   // Pomodoro management
   const pomodoroApi = usePomodoro(entriesApi.addEntry, setSettings);
 
-  // Reminders management
-  const remindersApi = useReminders(reminders, setSettings);
-
   // Current view state - initialized based on recovery check
   const [view, setView] = useState(INITIAL_STATE.view);
   const [selectedScope, setSelectedScope] = useState(() => {
@@ -234,16 +238,26 @@ export function AppProvider({ children }) {
     return null;
   });
 
+  // Reminders management - they may only ever cover the home screen
+  const remindersApi = useReminders(reminders, setSettings, view === 'main');
+
   // Section of the settings view to scroll to when it opens (e.g. 'reminders')
   const [settingsFocus, setSettingsFocus] = useState(null);
 
   const clearSettingsFocus = useCallback(() => setSettingsFocus(null), []);
 
-  // Jump from a reminder window to its section in settings
+  // Jump from a reminder window to its section in settings. Closing the window
+  // this way counts as postponing - it asks again next time you are home.
   const openReminderSettings = (reminderId) => {
-    remindersApi.dismissReminder(reminderId);
+    remindersApi.postponeReminder(reminderId);
     setSettingsFocus('reminders');
     setView('settings');
+  };
+
+  // Test button in settings - go home so the reminder has somewhere to show
+  const testReminder = (reminderId) => {
+    remindersApi.testReminder(reminderId);
+    setView('main');
   };
 
   // Clock size cycling
@@ -324,9 +338,10 @@ export function AppProvider({ children }) {
     // Pomodoro
     ...pomodoroApi,
 
-    // Reminders
+    // Reminders (testReminder overrides the hook's, adding the trip home)
     ...remindersApi,
     openReminderSettings,
+    testReminder,
 
     // View management
     settingsFocus,

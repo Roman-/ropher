@@ -19,7 +19,6 @@ export function PomodoroView() {
     changeInterval,
     finishAndReturn,
     playDing,
-    showPostponedReminders,
   } = useApp();
 
   const [tick, forceUpdate] = useState(0);
@@ -48,8 +47,6 @@ export function PomodoroView() {
     const overdue = isOverdue();
     if (overdue && !prevOverdueRef.current) {
       playDing();
-      // Reminders postponed earlier pop up now that the timer is finished
-      showPostponedReminders();
       overdueStartRef.current = Date.now();
       lastBlinkMinuteRef.current = 0;
     }
@@ -58,7 +55,7 @@ export function PomodoroView() {
       lastBlinkMinuteRef.current = -1;
     }
     prevOverdueRef.current = overdue;
-  }, [tick, isActive, isOverdue, playDing, showPostponedReminders]);
+  }, [tick, isActive, isOverdue, playDing]);
 
   // Blink effect every minute when overdue
   useEffect(() => {

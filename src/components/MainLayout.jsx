@@ -4,6 +4,7 @@ import { Timeline } from './Timeline';
 import { TimeSummary } from './TimeSummary';
 import { QuoteDisplay } from './QuoteDisplay';
 import { SettingsMenu } from './SettingsMenu';
+import { ReminderOverlay } from './ReminderOverlay';
 
 export function MainLayout() {
   return (
@@ -31,6 +32,9 @@ export function MainLayout() {
       <div className="status-bar">
         <QuoteDisplay />
       </div>
+
+      {/* Reminders may only ever cover the home screen */}
+      <ReminderOverlay />
     </div>
   );
 }
